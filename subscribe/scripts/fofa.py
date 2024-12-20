@@ -124,7 +124,7 @@ def recall(params: dict) -> list:
         config = deepcopy(params.get("config", {}))
         config["sub"] = sub
         config["saved"] = False
-        config["checked"] = False
+        config["checked"] = True
         config["nocache"] = nocache
         config["pardon"] = pardon
         config["name"] = naming_task(link)
