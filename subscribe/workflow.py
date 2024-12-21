@@ -138,8 +138,61 @@ def execute(task_conf: TaskConfig) -> list:
     logger.info(
         f"finished fetch proxy: name=[{task_conf.name}]\tid=[{task_conf.index}]\tdomain=[{obj.ref}]\tcount=[{len(proxies)}]"
     )
+    
+    # 提取纯节点信息
+    node_list = []
+    for proxy in proxies:
+        if isinstance(proxy, dict):
+            node_info = {
+                "name": proxy.get("name"),
+                "server": proxy.get("server"),
+                "port": proxy.get("port"),
+                "type": proxy.get("type"),
+                # 根据你的节点信息结构添加其他需要的字段
+            }
+            node_list.append(node_info)
+
+    # 创建纯节点文件并推送到 Gist
+    if node_list:
+        push_node_list(node_list=node_list, task_conf=task_conf)
 
     return proxies
+
+
+def push_node_list(node_list: list, task_conf: TaskConfig):
+    """
+    将纯节点列表推送到 Gist
+    """
+    if not node_list:
+       logger.error("[PushError] nodes list is empty.")
+       return
+    
+    push_config = {
+        "type": "gist",
+        "url": "https://api.github.com/gists",  # Gist API URL
+        "method": "post",
+        "token": os.environ.get("GITHUB_TOKEN"),  # 从环境变量中获取 GitHub Token
+        "filename": f"{task_conf.name}_nodes.json", # 设置文件名
+        "description": f"{task_conf.name} Pure Node List", # 设置描述
+        "group": "nodes-list"  # 设置分组
+    }
+    
+    if not push_config.get("token"):
+        logger.error("[PushError] github token not found.")
+        return
+    
+    push = PushTo(
+       push_type="gist",
+       gist_url="https://api.github.com/gists",
+       gist_token=push_config.get("token")
+    )
+    
+    try:
+        content = json.dumps(node_list, indent=2, ensure_ascii=False)
+        push.push_to(content=content, push_conf=push_config, group="nodes-list")
+        logger.info(f"[PushInfo] pushed node list to gist: {push_config.get('filename')}")
+    except Exception as e:
+       logger.error(f"[PushError] push node list failed: {e}")
 
 
 def executewrapper(task_conf: TaskConfig) -> tuple[int, list]:
