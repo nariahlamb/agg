@@ -507,6 +507,36 @@ def assign(
     return tasks, groups, arrays
 
 
+def push_node_list(node_list: list, task_conf: TaskConfig, pushtool: push.PushTo):
+    """
+    将纯节点列表推送到 Gist
+    """
+    if not node_list:
+       logger.error("[PushError] nodes list is empty.")
+       return
+    
+    push_config = {
+        "type": "gist",
+        "url": "https://api.github.com/gists",  # Gist API URL
+        "method": "post",
+        "token": os.environ.get("PUSH_TOKEN"),  # 从环境变量中获取 PUSH_TOKEN
+        "filename": f"{task_conf.name}_nodes.json", # 设置文件名
+        "description": f"{task_conf.name} Pure Node List", # 设置描述
+        "group": "nodes-list"  # 设置分组
+    }
+    
+    if not push_config.get("token"):
+        logger.error("[PushError] github token not found.")
+        return
+    
+    try:
+        content = json.dumps(node_list, indent=2, ensure_ascii=False)
+        pushtool.push_to(content=content, push_conf=push_config, group="nodes-list")
+        logger.info(f"[PushInfo] pushed node list to gist: {push_config.get('filename')}")
+    except Exception as e:
+       logger.error(f"[PushError] push node list failed: {e}")
+
+
 def aggregate(args: argparse.Namespace) -> None:
     if not args or not isinstance(args, argparse.Namespace):
         return
@@ -628,10 +658,30 @@ def aggregate(args: argparse.Namespace) -> None:
 
         for item in nochecks:
             item.pop("sub", "")
-
+        
         if len(nochecks) <= 0:
             logger.error(f"cannot fetch any proxy, group=[{k}], cost: {time.time()-starttime:.2f}s")
             continue
+
+        # 提取纯节点列表信息
+        node_list = []
+        for proxy in nochecks:
+            if isinstance(proxy, dict):
+                node_info = {
+                    "name": proxy.get("name"),
+                    "server": proxy.get("server"),
+                    "port": proxy.get("port"),
+                    "type": proxy.get("type"),
+                    # 根据你的节点信息结构添加其他需要的字段
+                }
+                node_list.append(node_info)
+        
+        # 推送纯节点列表
+        group_conf = process_config.groups.get(k, {})
+        if node_list and group_conf:
+            task_conf = TaskConfig(name=k)  # 创建一个 TaskConfig 实例，仅使用 name 属性
+            push_node_list(node_list=node_list, task_conf=task_conf, pushtool=pushtool)
+
 
         group_conf = process_config.groups.get(k, {})
         emoji = group_conf.get("emoji", True)
