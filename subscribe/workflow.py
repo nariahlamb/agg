@@ -40,7 +40,7 @@ class TaskConfig:
     retry: int = 3
 
     # 最高允许倍率
-    rate: float = 20.0
+    rate: float = 30.0
 
     # 标签
     tag: str = ""
@@ -68,13 +68,13 @@ class TaskConfig:
     disable_insecure: bool = False
 
     # 覆盖subconverter默认exclude规则
-    ignorede: bool = False
+    ignorede: bool = True
 
     # 是否允许特殊协议
     special_protocols: bool = False
 
     # 对于具有邮箱域名白名单且需要验证码的情况，是否使用 Gmail 别名邮箱尝试，为 True 时表示不使用
-    rigid: bool = True
+    rigid: bool = False
 
     # 是否丢弃可能需要人机验证的站点
     chuck: bool = False
